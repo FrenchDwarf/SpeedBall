@@ -4,67 +4,62 @@ using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour {
 
+	//GameObject elements
 	private Rigidbody ball_rb;
 	public GameObject camera_object;
 	public GameObject pivot_object;
 	public GameObject ref_object;
+
+	//Prefabs
 	public GameObject point_prefab;
 	public GameObject bonus_prefab;
 
+	//Camera controller variables
 	Vector2 mousePos;
 	float camera_angle_x;
 
+	//Game state variables
 	bool paused;
 	bool out_of_bounds;
 	bool time_out;
 
+	//Timer & score variables
 	float spawn_timer;
-
 	float game_score;
 	float game_timer;
 	float pivot_timer;
 	float pivot_duration;
 
+	//GUI variables
 	public Texture2D[] gui_textures;
 	GUIStyle guistyle_banner_text;
 	GUIStyle guistyle_pause_text;
 
-	void Reset(){
-
-		pivot_object.transform.eulerAngles = Vector3.zero;
-		transform.position = new Vector3 (0, 3.5f, 0);
-		ball_rb.velocity = Vector3.zero;
-		ball_rb.angularVelocity = Vector3.zero;
-
-		time_out = false;
-		out_of_bounds = false;
-		mousePos = Input.mousePosition;
-		game_score = 0;
-		camera_angle_x = 0;
-		pivot_timer = 0;
-		game_timer = 60;
-		spawn_timer = 0;
-
-		Unpause ();
-
-	}
-
+	//On Load
 	void Start () {
+
+		ball_rb = GetComponent<Rigidbody> ();
+
+		ConstructGUIStyles ();
+
 		time_out = false;
 		out_of_bounds = false;
 		paused = false;
+
 		mousePos = Input.mousePosition;
-		game_score = 0;
 		camera_angle_x = 0;
-		ball_rb = GetComponent<Rigidbody> ();
+
+		game_score = 0;
 		pivot_duration = 20.0f;
 		pivot_timer = 0;
 		game_timer = 60;
-		ConstructGUIStyles ();
 		spawn_timer = 0;
+
 	}
 
+	//Create text styles
 	void ConstructGUIStyles(){
+		
 		guistyle_banner_text = new GUIStyle();
 		guistyle_banner_text.fontSize = Screen.height / 24;
 		guistyle_banner_text.normal.textColor = Color.white;
@@ -74,29 +69,10 @@ public class GameController : MonoBehaviour {
 		guistyle_pause_text.fontSize = Screen.height / 12;
 		guistyle_pause_text.normal.textColor = Color.yellow;
 		guistyle_pause_text.alignment = TextAnchor.MiddleCenter;
+
 	}
 
-	void Pause(){
-		Time.timeScale = 0;
-		paused = true;
-	}
-
-	void Unpause(){
-		Time.timeScale = 1;
-		paused = false;
-	}
-
-	void DestroyLevel(){
-		GameObject[] points_to_remove = GameObject.FindGameObjectsWithTag ("Point");
-		for (int i = points_to_remove.Length; i > 0; i--) {
-			GameObject.Destroy(points_to_remove[i-1]);
-		}
-		GameObject[] bonuses_to_remove = GameObject.FindGameObjectsWithTag ("Bonus");
-		for (int i = bonuses_to_remove.Length; i > 0; i--) {
-			GameObject.Destroy(bonuses_to_remove[i-1]);
-		}
-	}
-
+	//Once per frame
 	void Update () {
 
 		if (!out_of_bounds && !time_out) {
@@ -116,7 +92,6 @@ public class GameController : MonoBehaviour {
 
 			}
 
-
 			game_timer -= Time.deltaTime;
 			if (game_timer > 60) {
 				game_timer = 60;
@@ -132,8 +107,6 @@ public class GameController : MonoBehaviour {
 				pivot_timer -= pivot_duration;
 			}
 
-			//pivot_object.transform.LookAt(new Vector3(100,0,0));
-
 			pivot_object.transform.LookAt (new Vector3(100, 100.0f * Mathf.Cos (pivot_timer * Mathf.PI * 2.0f / pivot_duration), 100.0f * Mathf.Sin (pivot_timer * Mathf.PI * 2.0f / pivot_duration)));
 
 			spawn_timer += Time.deltaTime;
@@ -143,7 +116,6 @@ public class GameController : MonoBehaviour {
 			}
 
 		}
-
 
 		if (!paused) {
 			float x = Input.mousePosition.x - mousePos.x;
@@ -170,30 +142,25 @@ public class GameController : MonoBehaviour {
 
 		mousePos = Input.mousePosition;
 
-
-
 		Vector3 grounded = transform.localPosition;
 		grounded.y = 3.5f;
 		transform.localPosition = grounded;
 
 	}
 
-	void OnTriggerEnter(Collider other){ //Called by child Trigger
-
-		if (other.tag == "Bonus") {
-
-			Destroy(other.gameObject);
-			game_timer += 5;
-
-		}else if (other.tag == "Point") {
-
-			Destroy(other.gameObject);
-			game_score ++;
-
-		}
-
+	//State change (Pause)
+	void Pause(){
+		Time.timeScale = 0;
+		paused = true;
 	}
 
+	//State change (Unpause)
+	void Unpause(){
+		Time.timeScale = 1;
+		paused = false;
+	}
+
+	//Spawn either a point or a bonus
 	void Spawn(){
 
 		float radius = 50.0f;
@@ -213,6 +180,36 @@ public class GameController : MonoBehaviour {
 
 	}
 
+	//Kill all the spawns
+	void DestroyLevel(){
+		GameObject[] points_to_remove = GameObject.FindGameObjectsWithTag ("Point");
+		for (int i = points_to_remove.Length; i > 0; i--) {
+			GameObject.Destroy(points_to_remove[i-1]);
+		}
+		GameObject[] bonuses_to_remove = GameObject.FindGameObjectsWithTag ("Bonus");
+		for (int i = bonuses_to_remove.Length; i > 0; i--) {
+			GameObject.Destroy(bonuses_to_remove[i-1]);
+		}
+	}
+
+	//Impact a point or a bonus (Called by child-object Trigger)
+	void OnTriggerEnter(Collider other){
+
+		if (other.tag == "Bonus") {
+
+			Destroy(other.gameObject);
+			game_timer += 5;
+
+		}else if (other.tag == "Point") {
+
+			Destroy(other.gameObject);
+			game_score ++;
+
+		}
+
+	}
+
+	//GUI
 	void OnGUI(){
 		GUI_Constant ();
 
@@ -221,7 +218,9 @@ public class GameController : MonoBehaviour {
 		}
 	}
 
+	//GUI Scoreboard
 	void GUI_Constant(){
+
 		GUI.backgroundColor = Color.clear;
 
 		GUI.BeginGroup(new Rect(0,0,Screen.width,Screen.height/16));
@@ -233,6 +232,7 @@ public class GameController : MonoBehaviour {
 
 	}
 
+	//GUI on Pause
 	void GUI_PauseScreen(){
 
 		GUI.BeginGroup(new Rect(0,0,Screen.width,Screen.height));
@@ -273,6 +273,28 @@ public class GameController : MonoBehaviour {
 		if (GUI.Button(new Rect(Screen.width / 4,Screen.height * 12 / 16,Screen.width / 2,Screen.height / 8), "")){
 			SceneManager.LoadScene(0,LoadSceneMode.Single);
 		}
+
+	}
+
+	//Retry
+	void Reset(){
+
+		pivot_object.transform.eulerAngles = Vector3.zero;
+		transform.position = new Vector3 (0, 3.5f, 0);
+		ball_rb.velocity = Vector3.zero;
+		ball_rb.angularVelocity = Vector3.zero;
+
+		mousePos = Input.mousePosition;
+		camera_angle_x = 0;
+
+		game_score = 0;
+		pivot_timer = 0;
+		game_timer = 60;
+		spawn_timer = 0;
+
+		time_out = false;
+		out_of_bounds = false;
+		Unpause ();
 
 	}
 
